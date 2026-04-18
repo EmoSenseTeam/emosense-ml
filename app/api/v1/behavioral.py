@@ -1,22 +1,16 @@
-"""Behavioral analysis HTTP routes."""
-
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException
 
 from app.schemas.behavioral import BehavioralAnalysisRequest, BehavioralAnalysisResponse
-from app.services import behavioral_service
+from app.services.behavioral_service import analyze_behavior
 
-router = APIRouter(tags=["behavioral"])
+router = APIRouter()
 
 
-@router.post(
-    "/behavioral",
-    response_model=BehavioralAnalysisResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Behavioral data analysis",
-    description="Baseline rule-based emotional index from lifestyle signals.",
-)
-def post_behavioral_analysis(
-    body: BehavioralAnalysisRequest,
-) -> BehavioralAnalysisResponse:
-    """Validate input and delegate scoring to the service layer."""
-    return behavioral_service.analyze_behavioral(body)
+@router.post("/analyze", response_model=BehavioralAnalysisResponse)
+def post_analyze(payload: BehavioralAnalysisRequest) -> BehavioralAnalysisResponse:
+    try:
+        return analyze_behavior(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
