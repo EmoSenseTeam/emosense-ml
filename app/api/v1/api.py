@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import behavioral, chat, emotion
+from app.api.v1 import behavioral, chat, emotion, moderation
 
 api_router = APIRouter()
 api_router.include_router(
@@ -17,4 +17,9 @@ api_router.include_router(
     emotion.router,
     prefix="/emotion",
     tags=["Emotion Analysis"],
+)
+api_router.include_router(
+    moderation.router,
+    prefix="/moderation",
+    tags=["Moderation"],
 )
