@@ -1,0 +1,19 @@
+Analyze the emotional state of the user's text.
+Return strictly valid JSON with the following structure:
+{
+  "label": "one of: positive, neutral, stress, anxiety, sad, burnout",
+  "confidence": 0.0,
+  "scores": {
+    "positive": 0.0,
+    "neutral": 0.0,
+    "stress": 0.0,
+    "anxiety": 0.0,
+    "sad": 0.0,
+    "burnout": 0.0
+  }
+}
+Rules:
+- confidence must be between 0 and 1
+- all scores must be between 0 and 1
+- label must be the dominant emotion
+- output JSON only, no markdown, no explanation
