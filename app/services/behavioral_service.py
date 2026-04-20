@@ -16,13 +16,18 @@ from app.utils.feature_engineering import (
 
 _MODEL_PATH = Path("models/behavioral_model.pkl")
 
-_DOMINANT_LABELS: dict[str, str] = {
-    "sleep_deficit": "insufficient sleep",
-    "screen_overuse": "excessive screen time",
+_DOMINANT_PHRASES: dict[str, str] = {
     "high_anxiety": "elevated anxiety",
-    "low_activity_risk": "sedentary behavior risk",
-    "social_isolation_risk": "social isolation risk",
+    "sleep_deprivation": "insufficient sleep",
+    "screen_overuse": "excessive screen time",
+    "balanced": "balanced lifestyle indicators",
 }
+
+
+def preload_behavioral_model() -> None:
+    """Загружает артефакт в память при старте приложения (если файл есть)."""
+    if _MODEL_PATH.exists():
+        _load_model_bundle()
 
 
 @lru_cache(maxsize=1)
@@ -30,7 +35,7 @@ def _load_model_bundle() -> dict[str, Any]:
     if not _MODEL_PATH.exists():
         raise FileNotFoundError(
             "Trained model not found at models/behavioral_model.pkl. "
-            "Run first: python -m app.utils.prepare_dataset "
+            "Run: python -m app.utils.generate_dataset "
             "then: python -m app.utils.train_model"
         )
     return joblib.load(_MODEL_PATH)
@@ -48,62 +53,43 @@ def encode_gender(gender: str) -> int:
 
 
 def get_risk_level(stress_score: float) -> str:
-    if stress_score >= 75:
-        return "critical"
-    if stress_score >= 55:
-        return "high"
-    if stress_score >= 30:
+    if stress_score < 35:
+        return "low"
+    if stress_score <= 65:
         return "moderate"
-    return "low"
+    return "high"
 
 
 def get_dominant_factor(
     daily_sleep_hours: float,
     screen_time_hours: float,
     anxiety_score: float,
-    activity_risk_proxy: float,
-    social_isolation_proxy: float,
 ) -> str:
-    factors = {
-        "sleep_deficit": max(0.0, 7.0 - daily_sleep_hours) * 10.0,
-        "screen_overuse": max(0.0, screen_time_hours - 5.0) * 8.0,
-        "high_anxiety": anxiety_score * 8.0,
-        "low_activity_risk": activity_risk_proxy,
-        "social_isolation_risk": social_isolation_proxy,
-    }
-    return max(factors, key=factors.get)
+    if anxiety_score > 7:
+        return "high_anxiety"
+    if daily_sleep_hours < 5:
+        return "sleep_deprivation"
+    if screen_time_hours > 8:
+        return "screen_overuse"
+    return "balanced"
 
 
-def build_summary(
-    risk_level: str,
-    dominant_factor: str,
-    activity_risk_proxy: float,
-    social_isolation_proxy: float,
-) -> str:
-    if risk_level == "low":
-        base = (
-            "Behavioral indicators are generally stable. "
-            "No strong stress signals were detected."
+def build_summary(risk_level: str, dominant_factor: str) -> str:
+    factor_text = _DOMINANT_PHRASES.get(dominant_factor, dominant_factor)
+    if risk_level == "high":
+        return (
+            f"High stress detected due to {factor_text}. "
+            "Consider adjusting sleep, screen time, and study load where possible."
         )
-    else:
-        label = _DOMINANT_LABELS.get(dominant_factor, dominant_factor)
-        level_phrase = f"{risk_level.capitalize()} stress level detected. "
-        base = (
-            level_phrase
-            + f"The dominant contributing factor is {label}."
+    if risk_level == "moderate":
+        return (
+            f"Moderate stress level; {factor_text} appears to be the main driver. "
+            "Monitoring habits over the next weeks is recommended."
         )
-    extras: list[str] = []
-    if activity_risk_proxy >= 60:
-        extras.append(
-            "Patterns also suggest possible low physical activity relative to screen and study load."
-        )
-    if social_isolation_proxy >= 60:
-        extras.append(
-            "Patterns also suggest possible social withdrawal or reduced offline engagement."
-        )
-    if extras:
-        return base + " " + " ".join(extras)
-    return base
+    return (
+        "Stable condition; behavioral signals remain within a comfortable range. "
+        "Continue maintaining healthy sleep, screen use, and study balance."
+    )
 
 
 def analyze_behavior(data: BehavioralAnalysisRequest) -> BehavioralAnalysisResponse:
@@ -143,11 +129,9 @@ def analyze_behavior(data: BehavioralAnalysisRequest) -> BehavioralAnalysisRespo
         data.daily_sleep_hours,
         data.screen_time_hours,
         data.anxiety_score,
-        activity_risk,
-        social_iso,
     )
     risk = get_risk_level(stress_score)
-    summary = build_summary(risk, dominant, activity_risk, social_iso)
+    summary = build_summary(risk, dominant)
 
     return BehavioralAnalysisResponse(
         stress_score=stress_score,

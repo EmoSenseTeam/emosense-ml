@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 
-_PROCESSED_PATH = Path("data/processed/clean_data.csv")
+_PROCESSED_PATH = Path("data/processed/better_data.csv")
 _MODEL_PATH = Path("models/behavioral_model.pkl")
 
 _FEATURE_COLUMNS = [
@@ -27,7 +27,7 @@ _TARGET_COLUMN = "stress_score"
 def main() -> None:
     if not _PROCESSED_PATH.exists():
         raise FileNotFoundError(
-            f"{_PROCESSED_PATH} not found. Run: python -m app.utils.prepare_dataset"
+            f"{_PROCESSED_PATH} not found. Run: python -m app.utils.generate_dataset"
         )
 
     df = pd.read_csv(_PROCESSED_PATH)

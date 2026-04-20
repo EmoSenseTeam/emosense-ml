@@ -87,7 +87,7 @@ pip install -r requirements.txt
 **Поведенческая модель** (`models/behavioral_model.pkl`):
 
 ```bash
-python -m app.utils.prepare_dataset
+python -m app.utils.generate_dataset
 python -m app.utils.train_model
 ```
 
@@ -98,7 +98,7 @@ python -m app.utils.prepare_moderation_dataset
 python -m app.utils.train_moderation_model
 ```
 
-Исходные данные должны лежать в `data/raw/` согласно скриптам (имена файлов см. в `app/utils/prepare_dataset.py` и `prepare_moderation_dataset.py`).
+Для поведенческого блока датасет создаётся скриптом `generate_dataset` в `data/processed/better_data.csv`. Для модерации исходный CSV лежит в `data/raw/` (см. `prepare_moderation_dataset.py`).
 
 ### 4. Запуск сервера
 
